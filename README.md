@@ -1,7 +1,7 @@
-# experiment_synthetic2
+# HD-GNN
 
 #### 介绍
-NEC-DGT erdos数据集的实验
+HD-GNN 
 
 #### 软件架构
 软件架构说明
