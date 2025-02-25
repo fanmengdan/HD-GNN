@@ -125,7 +125,7 @@ class graph2graph(object):
             self.variable_summaries(params_list[i], i)
         self.loss_para = 0
         for i in params_list:
-            self.loss_para += 0.001 * tf.nn.l2_loss(i);
+            self.loss_para += 0.001 * tf.nn.l2_loss(i)
 
         # 这个方法是添加变量到直方图中，启动 tensorborder 可以看
         tf.summary.scalar('hunk_edge_mse', self.loss_Hedge_mse)
@@ -139,7 +139,7 @@ class graph2graph(object):
     def marshalling_B1(self, E_node_train, Es, Et, E_edge_train):
         # tf.concat代表在第1个维度(列)拼接
         # tf.matmul 将矩阵a 乘以矩阵b,生成a*b
-        return tf.concat([tf.matmul(E_node_train, Es), tf.matmul(E_node_train, Et), E_edge_train], 1);
+        return tf.concat([tf.matmul(E_node_train, Es), tf.matmul(E_node_train, Et), E_edge_train], 1)
 
     def marshalling_B2(self, B_1, Esc, Etc, Cs, Ct, C_edge_train):
         B_t = tf.transpose(B_1, [0, 2, 1])  # (50,4,39800)->(50,39800,4)
@@ -154,28 +154,28 @@ class graph2graph(object):
         Cs_neighboEt_ht = tf.transpose(Cs_neighboEt_h, [0, 2, 1])  # (50,5402,4)->(50,4,5402)
         Ct_neighboEt_ht = tf.transpose(Ct_neighboEt_h, [0, 2, 1])  # (50,5402,4)->(50,4,5402)
         B_2 = tf.concat([Cs_neighboEt_ht, Ct_neighboEt_ht, C_edge_train],
-                        1);  # concat (50,4,5402),(50,4,5402),(50,2,5402)的第1个维度=(50,10,5402)
-        return B_2;
+                        1)  # concat (50,4,5402),(50,4,5402),(50,2,5402)的第1个维度=(50,10,5402)
+        return B_2
 
     def mlp_entity_B1(self, B):
         with tf.variable_scope("phi_E_O1") as scope:
-            h_size = 20;  # (50,4,39800) —> (50,20,39800)
-            B_trans = tf.transpose(B, [0, 2, 1]);  # (50,39800,4)
-            B_trans = tf.reshape(B_trans, [self.mini_batch_num * self.Ner, (2 * self.Ds + self.Dr)]);
+            h_size = 20  # (50,4,39800) —> (50,20,39800)
+            B_trans = tf.transpose(B, [0, 2, 1])  # (50,39800,4)
+            B_trans = tf.reshape(B_trans, [self.mini_batch_num * self.Ner, (2 * self.Ds + self.Dr)])
             # 要定义成变量，它才是一个变量
             w1 = tf.Variable(tf.truncated_normal([(2 * self.Ds + self.Dr), h_size], stddev=0.1), name="r1_w1o",
-                             dtype=tf.float32);
-            b1 = tf.Variable(tf.zeros([h_size]), name="r1_b1o", dtype=tf.float32);
-            h1 = tf.nn.relu(tf.matmul(B_trans, w1) + b1);
+                             dtype=tf.float32)
+            b1 = tf.Variable(tf.zeros([h_size]), name="r1_b1o", dtype=tf.float32)
+            h1 = tf.nn.relu(tf.matmul(B_trans, w1) + b1)
 
-            w5 = tf.Variable(tf.truncated_normal([h_size, self.De_e], stddev=0.1), name="r1_w5o", dtype=tf.float32);
-            b5 = tf.Variable(tf.zeros([self.De_e]), name="r1_b5o", dtype=tf.float32);
-            # h5 = tf.nn.relu(tf.matmul(h1, w5) + b5);
-            h5 = tf.matmul(h1, w5) + b5;
+            w5 = tf.Variable(tf.truncated_normal([h_size, self.De_e], stddev=0.1), name="r1_w5o", dtype=tf.float32)
+            b5 = tf.Variable(tf.zeros([self.De_e]), name="r1_b5o", dtype=tf.float32)
+            # h5 = tf.nn.relu(tf.matmul(h1, w5) + b5)
+            h5 = tf.matmul(h1, w5) + b5
 
-            h5_trans = tf.reshape(h5, [self.mini_batch_num, self.Ner, self.De_e]);
-            h5_trans = tf.transpose(h5_trans, [0, 2, 1]);  # (50,20,39800)
-            return (h5_trans);
+            h5_trans = tf.reshape(h5, [self.mini_batch_num, self.Ner, self.De_e])
+            h5_trans = tf.transpose(h5_trans, [0, 2, 1])  # (50,20,39800)
+            return (h5_trans)
 
     def agg_entity_B1(self, E, Es, O):
         # E:(50,20,39800)
@@ -183,60 +183,60 @@ class graph2graph(object):
         # tf.transpose(Es,[0,2,1]) #(50,39800,200)
         # tf.transpose(self.Et,[0,2,1]) #(50,39800,200)
         E_bar = tf.matmul(E, tf.transpose(Es, [0, 2, 1])) + tf.matmul(E, tf.transpose(self.Et, [0, 2,
-                                                                                                1]));  # (50,20,200) 把39800抵消了，也即根据边找到对应端点的新的值
-        return (tf.concat([O, E_bar], 1));  # (50,20,200) + (50,1,200)
+                                                                                                1]))  # (50,20,200) 把39800抵消了，也即根据边找到对应端点的新的值
+        return (tf.concat([O, E_bar], 1))  # (50,20,200) + (50,1,200)
 
     def mlp2_entity_B1(self, C):
         with tf.variable_scope("phi_U_O1") as scope:
-            h_size = 20;
-            C_trans = tf.transpose(C, [0, 2, 1]);  #
-            C_trans = tf.reshape(C_trans, [self.mini_batch_num * self.Ne, (self.Ds + self.De_e)]);
+            h_size = 20
+            C_trans = tf.transpose(C, [0, 2, 1])  #
+            C_trans = tf.reshape(C_trans, [self.mini_batch_num * self.Ne, (self.Ds + self.De_e)])
             # 要定义成变量，它才是一个变量
             w1 = tf.Variable(tf.truncated_normal([(self.Ds + self.De_e), h_size], stddev=0.1), name="o1_w1o",
-                             dtype=tf.float32);
-            b1 = tf.Variable(tf.zeros([h_size]), name="o1_b1o", dtype=tf.float32);
-            h1 = tf.nn.relu(tf.matmul(C_trans, w1) + b1);
-            w2 = tf.Variable(tf.truncated_normal([h_size, self.Ds], stddev=0.1), name="o1_w2o", dtype=tf.float32);
-            b2 = tf.Variable(tf.zeros([self.Ds_inter]), name="o1_b2o", dtype=tf.float32);
+                             dtype=tf.float32)
+            b1 = tf.Variable(tf.zeros([h_size]), name="o1_b1o", dtype=tf.float32)
+            h1 = tf.nn.relu(tf.matmul(C_trans, w1) + b1)
+            w2 = tf.Variable(tf.truncated_normal([h_size, self.Ds], stddev=0.1), name="o1_w2o", dtype=tf.float32)
+            b2 = tf.Variable(tf.zeros([self.Ds_inter]), name="o1_b2o", dtype=tf.float32)
             h2 = tf.nn.relu(tf.matmul(h1, w2) + b2)
-            h2_trans = tf.reshape(h2, [self.mini_batch_num, self.Ne, self.Ds_inter]);
-            h2_trans = tf.transpose(h2_trans, [0, 2, 1]);
-            return (h2_trans);
+            h2_trans = tf.reshape(h2, [self.mini_batch_num, self.Ne, self.Ds_inter])
+            h2_trans = tf.transpose(h2_trans, [0, 2, 1])
+            return (h2_trans)
 
     def mlp_entityedge_B1(self, B):
         with tf.variable_scope("phi_E_R1") as scope:
-            h_size = 20;  # B: (50,4,39800)
-            B_trans = tf.transpose(B, [0, 2, 1]);  # (50,39800,4)
-            # Nr:39800 Number of Relations; Ds:1 State Dimention; Dr:2 Relationship Dimension
+            h_size = 20  # B: (50,4,39800)
+            B_trans = tf.transpose(B, [0, 2, 1])  # (50,39800,4)
+            # Nr:39800 Number of Relations Ds:1 State Dimention Dr:2 Relationship Dimension
             # (39800*50, 1+1+2) = (78000,4)
-            B_trans = tf.reshape(B_trans, [self.mini_batch_num * self.Ner, (2 * self.Ds + self.Dr)]);
+            B_trans = tf.reshape(B_trans, [self.mini_batch_num * self.Ner, (2 * self.Ds + self.Dr)])
 
-            # 要定义成变量，它才是一个变量;
+            # 要定义成变量，它才是一个变量
             # tf.truncated_normal(shape, mean=0.0, stddev=1.0, dtype=tf.float32, seed=None, name=None):
             # shape 表示生成张量的维度（a * a），mean是均值，stddev 是标准差
 
-            # w1_1:(1,20) 每个节点的权重; w1_2:(2,20) 每个边的权重
-            w1_1 = tf.Variable(tf.truncated_normal([(self.Ds), h_size], stddev=0.1), name="r1_w1r1", dtype=tf.float32);
-            w1_2 = tf.Variable(tf.truncated_normal([(self.Dr), h_size], stddev=0.1), name="r1_w1r2", dtype=tf.float32);
+            # w1_1:(1,20) 每个节点的权重 w1_2:(2,20) 每个边的权重
+            w1_1 = tf.Variable(tf.truncated_normal([(self.Ds), h_size], stddev=0.1), name="r1_w1r1", dtype=tf.float32)
+            w1_2 = tf.Variable(tf.truncated_normal([(self.Dr), h_size], stddev=0.1), name="r1_w1r2", dtype=tf.float32)
             w1 = tf.concat([w1_1, w1_1, w1_2], 0)  # (4,20)
-            # w1 = tf.Variable(tf.truncated_normal([(2*self.Ds+self.Dr), h_size], stddev=0.1), name="r_w1r", dtype=tf.float32);
-            b1 = tf.Variable(tf.zeros([h_size]), name="r1_b1r", dtype=tf.float32);  # (20)
-            h1 = tf.nn.relu(tf.matmul(B_trans, w1) + b1);  # (78000,4)*(4,20) = (78000,20) 每个batch中所有边的维度
+            # w1 = tf.Variable(tf.truncated_normal([(2*self.Ds+self.Dr), h_size], stddev=0.1), name="r_w1r", dtype=tf.float32)
+            b1 = tf.Variable(tf.zeros([h_size]), name="r1_b1r", dtype=tf.float32)  # (20)
+            h1 = tf.nn.relu(tf.matmul(B_trans, w1) + b1)  # (78000,4)*(4,20) = (78000,20) 每个batch中所有边的维度
 
-            # w2:(20,20); De_er:20 Effect Dimension on edge;
-            w2 = tf.Variable(tf.truncated_normal([h_size, self.De_er], stddev=0.1), name="r1_w2r", dtype=tf.float32);
-            b2 = tf.Variable(tf.zeros([self.De_er]), name="r1_b2r", dtype=tf.float32);  # (20)
-            h2 = tf.matmul(h1, w2) + b2;  # (78000,20) * (20,20) = (78000,20)
-            h2_trans = tf.reshape(h2, [self.mini_batch_num, self.Ner, self.De_er]);  # (50,39800,20)
-            h2_trans = tf.transpose(h2_trans, [0, 2, 1]);  # (50,20,39800) 每个B的特征
+            # w2:(20,20) De_er:20 Effect Dimension on edge
+            w2 = tf.Variable(tf.truncated_normal([h_size, self.De_er], stddev=0.1), name="r1_w2r", dtype=tf.float32)
+            b2 = tf.Variable(tf.zeros([self.De_er]), name="r1_b2r", dtype=tf.float32)  # (20)
+            h2 = tf.matmul(h1, w2) + b2  # (78000,20) * (20,20) = (78000,20)
+            h2_trans = tf.reshape(h2, [self.mini_batch_num, self.Ner, self.De_er])  # (50,39800,20)
+            h2_trans = tf.transpose(h2_trans, [0, 2, 1])  # (50,20,39800) 每个B的特征
 
             # edge translation
             # tf.transpose(self.Es,[0,2,1]):(50,39800,200)
             # tf.transpose(self.Et,[0,2,1]): (50,39800,200)
             h2_trans_bar1 = tf.matmul(h2_trans, tf.transpose(self.Es, [0, 2,
-                                                                       1]));  # (50,20,200) B根据源端点排序 (50,20,39800)*(50,39800,200)
+                                                                       1]))  # (50,20,200) B根据源端点排序 (50,20,39800)*(50,39800,200)
             h2_trans_bar2 = tf.matmul(h2_trans, tf.transpose(self.Et, [0, 2,
-                                                                       1]));  # (50,20,200) B根据目的端点排序 (50,20,39800)*(50,39800,200)
+                                                                       1]))  # (50,20,200) B根据目的端点排序 (50,20,39800)*(50,39800,200)
             # (50,20,200)*(50,200,39800) = (50,20,39800) 源端点和目的端点分别还原成关系的矩阵，结合源端点和目的端点的B
             effects = tf.matmul(h2_trans_bar1, self.Es) + tf.matmul(h2_trans_bar2, self.Et)
 
@@ -245,35 +245,35 @@ class graph2graph(object):
     # 对hunk边进行编码的mlp
     def mlp_hunk_B2(self, B2):
         with tf.variable_scope("mlp_hunk_B2") as scope:
-            h_size = 20;  # B2: (50,10,5402)
-            B_trans = tf.transpose(B2, [0, 2, 1]);  # (50,5402,10)
-            # Ncr:5402 Number of Relations; Ds:1 State Dimention; Dr:2 Relationship Dimension
+            h_size = 20  # B2: (50,10,5402)
+            B_trans = tf.transpose(B2, [0, 2, 1])  # (50,5402,10)
+            # Ncr:5402 Number of Relations Ds:1 State Dimention Dr:2 Relationship Dimension
             # (5402*50, 10) = (273800,10)
-            B_trans = tf.reshape(B_trans, [self.mini_batch_num * self.Ncr, B2.shape[1]]);
+            B_trans = tf.reshape(B_trans, [self.mini_batch_num * self.Ncr, B2.shape[1]])
 
-            # 要定义成变量，它才是一个变量;
+            # 要定义成变量，它才是一个变量
             # tf.truncated_normal(shape, mean=0.0, stddev=1.0, dtype=tf.float32, seed=None, name=None):
             # shape 表示生成张量的维度（a * a），mean是均值，stddev 是标准差
 
             w1 = tf.Variable(tf.truncated_normal([B2.shape[1], h_size], stddev=0.1), name="w1",
-                             dtype=tf.float32);  # (10,20)
-            b1 = tf.Variable(tf.zeros([h_size]), name="b1", dtype=tf.float32);  # (20)
-            h1 = tf.nn.relu(tf.matmul(B_trans, w1) + b1);  # (273800,10)*(10,20) = (273800,20) 每个batch中所有hunk边的维度
+                             dtype=tf.float32)  # (10,20)
+            b1 = tf.Variable(tf.zeros([h_size]), name="b1", dtype=tf.float32)  # (20)
+            h1 = tf.nn.relu(tf.matmul(B_trans, w1) + b1)  # (273800,10)*(10,20) = (273800,20) 每个batch中所有hunk边的维度
 
-            # w2:(20,20); De_er:20 Effect Dimension on edge;
-            w2 = tf.Variable(tf.truncated_normal([h_size, self.De_er], stddev=0.1), name="r1_w2r", dtype=tf.float32);
-            b2 = tf.Variable(tf.zeros([self.De_er]), name="b2", dtype=tf.float32);  # (20)
-            h2 = tf.matmul(h1, w2) + b2;  # (273800,20) * (20,20) = (273800,20)
-            h2_trans = tf.reshape(h2, [self.mini_batch_num, self.Ncr, self.De_er]);  # (50,5402,20)
-            h2_trans = tf.transpose(h2_trans, [0, 2, 1]);  # (50,20,5402) 每个B的特征
+            # w2:(20,20) De_er:20 Effect Dimension on edge
+            w2 = tf.Variable(tf.truncated_normal([h_size, self.De_er], stddev=0.1), name="r1_w2r", dtype=tf.float32)
+            b2 = tf.Variable(tf.zeros([self.De_er]), name="b2", dtype=tf.float32)  # (20)
+            h2 = tf.matmul(h1, w2) + b2  # (273800,20) * (20,20) = (273800,20)
+            h2_trans = tf.reshape(h2, [self.mini_batch_num, self.Ncr, self.De_er])  # (50,5402,20)
+            h2_trans = tf.transpose(h2_trans, [0, 2, 1])  # (50,20,5402) 每个B的特征
 
             # edge translation
             # tf.transpose(self.Es,[0,2,1]):(50,5402,20)
             # tf.transpose(self.Et,[0,2,1]):(50,5402,20)
             h2_trans_bar1 = tf.matmul(h2_trans, tf.transpose(self.Cs, [0, 2,
-                                                                       1]));  # (50,20,74) B2根据源端hunk排序 (50,20,5402)*(50,5402,74)
+                                                                       1]))  # (50,20,74) B2根据源端hunk排序 (50,20,5402)*(50,5402,74)
             h2_trans_bar2 = tf.matmul(h2_trans, tf.transpose(self.Ct, [0, 2,
-                                                                       1]));  # (50,20,74) B2根据目的端hunk排序 (50,20,5402)*(50,5402,74)
+                                                                       1]))  # (50,20,74) B2根据目的端hunk排序 (50,20,5402)*(50,5402,74)
             # (50,20,74)*(50,74,5402) = (50,20,5402) 源端hunk 和 目的hunk 分别还原成关系的矩阵，结合源端hunk 和 目的端hunk的 B2
             effects = tf.matmul(h2_trans_bar1, self.Cs) + tf.matmul(h2_trans_bar2, self.Ct)
 
@@ -281,64 +281,64 @@ class graph2graph(object):
 
     def agg_entityedge_B1(self, E, Ra):
         C_R = tf.concat([Ra, E], 1)
-        return (C_R);
+        return (C_R)
 
     def mlp2_entityedge_B1(self, C_R):
         with tf.variable_scope("phi_U_R1") as scope:
-            h_size = 20;
-            C_trans = tf.transpose(C_R, [0, 2, 1]);
-            C_trans = tf.reshape(C_trans, [self.mini_batch_num * self.Ner, (self.De_er + self.Dr)]);
+            h_size = 20
+            C_trans = tf.transpose(C_R, [0, 2, 1])
+            C_trans = tf.reshape(C_trans, [self.mini_batch_num * self.Ner, (self.De_er + self.Dr)])
 
             # 要定义成变量，它才是一个变量
             w1 = tf.Variable(tf.truncated_normal([(self.De_er + self.Dr), h_size], stddev=0.1), name="o1_w1r",
-                             dtype=tf.float32);
-            b1 = tf.Variable(tf.zeros([h_size]), name="o1_b1r", dtype=tf.float32);
-            h1 = tf.nn.relu(tf.matmul(C_trans, w1) + b1);
+                             dtype=tf.float32)
+            b1 = tf.Variable(tf.zeros([h_size]), name="o1_b1r", dtype=tf.float32)
+            h1 = tf.nn.relu(tf.matmul(C_trans, w1) + b1)
 
-            w2 = tf.Variable(tf.truncated_normal([h_size, self.Dr_inter], stddev=0.1), name="o1_w2r", dtype=tf.float32);
-            b2 = tf.Variable(tf.zeros([self.Dr_inter]), name="o1_b2r", dtype=tf.float32);
+            w2 = tf.Variable(tf.truncated_normal([h_size, self.Dr_inter], stddev=0.1), name="o1_w2r", dtype=tf.float32)
+            b2 = tf.Variable(tf.zeros([self.Dr_inter]), name="o1_b2r", dtype=tf.float32)
 
-            h2_trans = tf.reshape(tf.matmul(h1, w2) + b2, [self.mini_batch_num, self.Ner, self.Dr]);  # (50,39800,2)
-            h2_trans_logits = tf.transpose(h2_trans, [0, 2, 1]);  # (50,2,39800)
+            h2_trans = tf.reshape(tf.matmul(h1, w2) + b2, [self.mini_batch_num, self.Ner, self.Dr])  # (50,39800,2)
+            h2_trans_logits = tf.transpose(h2_trans, [0, 2, 1])  # (50,2,39800)
             h2 = tf.nn.softmax(h2_trans_logits, dim=1)  # (50,2,39800)
             return h2, h2_trans_logits  # score被softmax后，输出的score
 
     # 给mlp的输出的hunk边的表示 降维
     def mlp_hunkedge_B2(self, hunkedge):
         with tf.variable_scope("phi_U_R1") as scope:
-            h_size = 20;
-            C_edge_trans = tf.transpose(hunkedge, [0, 2, 1]);  # (50,22,5402)->(50,5402,22)
-            C_edge_trans2 = tf.reshape(C_edge_trans, [self.mini_batch_num * self.Ncr, hunkedge.shape[1]]);  # (50*5402,22)
+            h_size = 20
+            C_edge_trans = tf.transpose(hunkedge, [0, 2, 1])  # (50,22,5402)->(50,5402,22)
+            C_edge_trans2 = tf.reshape(C_edge_trans, [self.mini_batch_num * self.Ncr, hunkedge.shape[1]])  # (50*5402,22)
 
             # 要定义成变量，它才是一个变量
             w1 = tf.Variable(tf.truncated_normal([hunkedge.shape[1], h_size], stddev=0.1), name="C_edge_w1",
-                             dtype=tf.float32);  # (22,20)
-            b1 = tf.Variable(tf.zeros([h_size]), name="C_edge_b1", dtype=tf.float32);  # (20)
+                             dtype=tf.float32)  # (22,20)
+            b1 = tf.Variable(tf.zeros([h_size]), name="C_edge_b1", dtype=tf.float32)  # (20)
             h1 = tf.nn.relu(
-                tf.matmul(C_edge_trans2, w1) + b1);  # (273800,22)*(22,20) + 20 = (273800,20) 每个batch中所有hunk边的维度
+                tf.matmul(C_edge_trans2, w1) + b1)  # (273800,22)*(22,20) + 20 = (273800,20) 每个batch中所有hunk边的维度
 
             w2 = tf.Variable(tf.truncated_normal([h_size, self.Dr_inter], stddev=0.1), name="o1_w2r",
-                             dtype=tf.float32);  # (20,2)
-            b2 = tf.Variable(tf.zeros([self.Dr_inter]), name="o1_b2r", dtype=tf.float32);  # (2)
+                             dtype=tf.float32)  # (20,2)
+            b2 = tf.Variable(tf.zeros([self.Dr_inter]), name="o1_b2r", dtype=tf.float32)  # (2)
 
-            h2_trans = tf.reshape(tf.matmul(h1, w2) + b2, [self.mini_batch_num, self.Ncr, self.Dr]);  # (50,5402,2)
-            h2_trans_logits = tf.transpose(h2_trans, [0, 2, 1]);  # (50,2,5402)
+            h2_trans = tf.reshape(tf.matmul(h1, w2) + b2, [self.mini_batch_num, self.Ncr, self.Dr])  # (50,5402,2)
+            h2_trans_logits = tf.transpose(h2_trans, [0, 2, 1])  # (50,2,5402)
             h2 = tf.nn.softmax(h2_trans_logits, dim=1)  # (50,2,5402)
             return h2, h2_trans_logits  # score被softmax后的结果，输出的score
 
     def map_loss(self, k):
         with tf.variable_scope("map_conv") as scope:
             # 要定义成变量，它才是一个变量
-            theta1 = tf.Variable(tf.truncated_normal([1, k, 1, 1], stddev=0.1), name="map_theta1", dtype=tf.float32);
-            theta2 = tf.Variable(tf.truncated_normal([1, k, 1, 1], stddev=0.1), name="map_theta2", dtype=tf.float32);
+            theta1 = tf.Variable(tf.truncated_normal([1, k, 1, 1], stddev=0.1), name="map_theta1", dtype=tf.float32)
+            theta2 = tf.Variable(tf.truncated_normal([1, k, 1, 1], stddev=0.1), name="map_theta2", dtype=tf.float32)
             loss2 = tf.sqrt(2 * tf.nn.l2_loss(tf.reshape(theta2, [k]))) + tf.sqrt(
                 tf.nn.l2_loss(tf.reshape(theta1, [k])) * 2)
             return 0.01 * loss2, theta2
 
     def train(self, args):  # 激活(sess.run) model里面的参数
         train_loss = 10 * self.loss_Hedge_mse + 0.1 * self.loss_map + self.loss_para
-        optimizer = tf.train.AdamOptimizer(0.0003);  # 优化器的主要作用就是根据损失函数求出的loss，对神经网络的参数进行更新
-        trainer = optimizer.minimize(train_loss);  # 优化器(损失函数)
+        optimizer = tf.train.AdamOptimizer(0.0003)  # 优化器的主要作用就是根据损失函数求出的loss，对神经网络的参数进行更新
+        trainer = optimizer.minimize(train_loss)  # 优化器(损失函数)
 
         init_op = tf.global_variables_initializer()  # 初始化所有变量, 此时还没激活
         self.sess.run(init_op)  # sess就像一个指针，处理的地方被激活
@@ -365,7 +365,7 @@ class graph2graph(object):
 
             for j in range(int(len(E_node_train) / self.mini_batch_num)):  # 按照batch划分轮数
                 batch_O = E_node_train[
-                          j * self.mini_batch_num:(j + 1) * self.mini_batch_num];  # (50,1,200) 取一个batch
+                          j * self.mini_batch_num:(j + 1) * self.mini_batch_num]  # (50,1,200) 取一个batch
                 batcC_edge_output = E_edge_train[j * self.mini_batch_num:(j + 1) * self.mini_batch_num]  # (50,2,39800)
                 batch_C_edge_train = C_edge_train[j * self.mini_batch_num:(j + 1) * self.mini_batch_num]  # (50,2,39800)sess就像一个指针，处理的地方被激活
 
@@ -383,7 +383,7 @@ class graph2graph(object):
                             self.Esc: Esc_data[:self.mini_batch_num],
                             self.Etc: Etc_data[:self.mini_batch_num]
                         }
-                    );
+                    )
 
                 tr_loss_Hedge += tr_loss_part_Hedge
                 tr_loss_map += tr_loss_part_map
@@ -477,7 +477,7 @@ class graph2graph(object):
         '''
         start_time = time.time()
         for j in range(int(len(E_node_test) / self.mini_batch_num)):
-            batch_O = E_node_test[j * self.mini_batch_num:(j + 1) * self.mini_batch_num];
+            batch_O = E_node_test[j * self.mini_batch_num:(j + 1) * self.mini_batch_num]
             batcC_edge_output = E_edge_test[j * self.mini_batch_num:(j + 1) * self.mini_batch_num]
             batch_C_edge_train = C_edge_test[
                               j * self.mini_batch_num:(j + 1) * self.mini_batch_num]  # sess就像一个指针，处理的地方被激活
@@ -499,7 +499,7 @@ class graph2graph(object):
                                   self.Esc: Esc_data[:self.mini_batch_num],
                                   self.Etc: Etc_data[:self.mini_batch_num]
                               }
-                              );
+                              )
 
             end_time = time.time()
 
