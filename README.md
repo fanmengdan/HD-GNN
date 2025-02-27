@@ -3,7 +3,7 @@
 </div>
 
 #### For each commit, given its adjacency matrixs of entity reference graph and code change graph (Preprocessing code in https://github.com/fanmengdan/Preprocess_graph), this code aims at using HD-GNN to train a model which can classify the relations among code changes. 
-#### Due to the large size of the data file, we only present the preprocessed dataset of glide here(glide.zip needs to be decompressed). Please create other data according to https://github.com/fanmengdan/Preprocess_graph
+#### Due to the large size of the data file, we only present the preprocessed dataset of glide here(glide.zip needs to be decompressed). Please preprocess other data according to https://github.com/fanmengdan/Preprocess_graph
 
 ## Requirements
 - macOS/Windows/Linux
